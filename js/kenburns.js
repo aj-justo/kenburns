@@ -1,4 +1,5 @@
 /*
+ * Changes by: AJ Justo, Github: ajweb
  * Jquery Kenburns Image Gallery
  * Original author: John [at] Toymakerlabs
  * Further changes, comments: [at]Toymakerlabs
@@ -61,9 +62,9 @@
      * Initial setup - dermines width, height, and adds the loading icon. 
      */
     Plugin.prototype.init = function () {
-
         var list = this.options.images;
         var that = this;
+        var loader = $('<div/>');
 
         this.width = $(this.element).width();
         this.height = $(this.element).height();
@@ -73,11 +74,9 @@
         for (i in list) {
             imagesObj["image"+i] = {};
             imagesObj["image"+i].loaded = false;
-        	this.attachImage(list[i], "image"+i , i);
-        	
+            this.attachImage(list[i], "image"+i , i);   
         }
 
-        var loader = $('<div/>');
         loader.addClass('loader');
         loader.css({'position':'absolute','z-index':10000});
         $(this.element).prepend(loader);
@@ -96,16 +95,16 @@
      * has 3d transform capabilities and initializes the starting CSS values. 
      */
     Plugin.prototype.attachImage = function(url,alt_text,index) {
-    	var that = this;
+        var that = this,
+            img = $("<img />"),
+            //put the image in an empty div to separate the animation effects of fading and moving
+            wrapper = $('<div/>');
 
-        //put the image in an empty div to separate the animation effects of fading and moving
-        var wrapper = $('<div/>');
         wrapper.attr('class','kb-slide');
         wrapper.css({'opacity':0});
 
-		var img = $("<img />");
-		img.attr('src', url);
-		img.attr('alt', alt_text);
+        img.attr('src', url);
+        img.attr('alt', alt_text);
 
         wrapper.html(img);
 
@@ -122,16 +121,16 @@
 
 
         //set up the image OBJ parameters - used to track loading and initial dimensions
-        img.load(function() {
-        	imagesObj["image"+index].element = this;
-        	imagesObj["image"+index].loaded  = true;
+        img.load(function(data) {
+            imagesObj["image"+index].element = this;
+            imagesObj["image"+index].loaded  = true;
             imagesObj["image"+index].width = $(this).width();
             imagesObj["image"+index].width = $(this).height();
             that.insertAt(index,wrapper);
             that.resume(index);
-		});
+        });
 
-	}
+    }
 
     /**
      * Resume
@@ -206,12 +205,12 @@
      * Also manages loading - if the interval encounters a slide
      * that has not loaded, the transition pauses. 
      */
-	Plugin.prototype.startTransition = function(start_index) {
-	    var that = this;
-	    currentSlide = start_index; //current slide
+    Plugin.prototype.startTransition = function(start_index) {
+        var that = this;
+        currentSlide = start_index; //current slide
 
         that.doTransition();
-		this.interval = setInterval(function(){
+        this.interval = setInterval(function(){
 
             //Advance the current slide
             if(currentSlide < that.maxSlides-1){
@@ -230,8 +229,8 @@
                 that.doTransition();
             }
 
-		},this.options.duration);
-	}
+        },this.options.duration);
+    }
 
 
     /** 
@@ -240,24 +239,41 @@
     * that is different from the start. This gives a random direction effect
     * it returns coordinates used by the transition functions. 
     */
-   
     Plugin.prototype.chooseCorner = function() {
-        var scale = this.options.scale; 
-        var image = imagesObj["image"+currentSlide].element;
+        var scale = this.options.scale,
+            imgObj = imagesObj["image" + currentSlide],
+            image = imgObj.element,
+            wRatio = 1,
+            hRatio = 1,
+            side, w, h, sw, sh, corners, choice, 
+            start, end, coordinates;
 
-        var ratio = image.height/image.width;
-        var sw = Math.floor($(this.element).width()*(1/scale));
-        var sh = Math.floor($(this.element).width()*ratio*(1/scale));
+        if(!imgObj.ratio){
+            imgObj.ratio = image.height / image.width;
+        }
+        if(imgObj.ratio < 1) {  // potrait
+            imgObj.ratio = 1/imgObj.ratio;
+        }
+
+        w = $(this.element).width();
+        h = $(this.element).height();
+
+        // set image's width and height to fit container
+        // deal with portrait/landscape formats 
+        if((w/h) > 1) {
+           hRatio = imgObj.ratio;
+           side = w;
+        } else {
+            side = h;
+            wRatio = imgObj.ratio;
+        }
+        sw = Math.floor(side * wRatio * (1 / scale));
+        sh = Math.floor(side * hRatio * (1 / scale));
 
         $(image).width(sw);
         $(image).height(sh);
 
-        var w = $(this.element).width();
-        var h = $(this.element).height();
-
-        //console.log(sw+ ", " + this.width);
-
-        var corners = [
+        corners = [
             {x:0,y:0},
             {x:1,y:0},
             {x:0,y:1},
@@ -265,15 +281,15 @@
         ];
 
         //Pick the first corner. Remove it from the array 
-        var choice = Math.floor(Math.random()*4);
-        var start = corners[choice];
+        choice = Math.floor(Math.random()*4);
+        start = corners[choice];
 
         //Pick the second corner from the subset
         corners.splice(choice,1);
-        var end = corners[Math.floor(Math.random()*3)];
+        end = corners[Math.floor(Math.random()*3)];
 
         //build the new coordinates from the chosen coordinates
-        var coordinates = {
+        coordinates = {
             startX: start.x * (w - sw*scale) ,
             startY: start.y * (h - sh*scale),
             endX: end.x * (w - sw),
