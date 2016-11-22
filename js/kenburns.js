@@ -43,6 +43,7 @@
 
     var imagesObj = {};
     var currentSlide = 0;
+    var containerDimensions = {};
 
     function Plugin( element, options ) {
         this.element = element;
@@ -74,7 +75,9 @@
         for (i in list) {
             imagesObj["image"+i] = {};
             imagesObj["image"+i].loaded = false;
-            this.attachImage(list[i], "image"+i , i);   
+            // imagesObj["image"+i].ratio = null;
+            this.attachImage(list[i], "image"+i , i);
+            
         }
 
         loader.addClass('loader');
@@ -239,39 +242,61 @@
     * that is different from the start. This gives a random direction effect
     * it returns coordinates used by the transition functions. 
     */
-    Plugin.prototype.chooseCorner = function() {
-        var scale = this.options.scale,
+
+    Plugin.prototype.setImageDimensions = function(){
+        var that = this,
+            scale = this.options.scale,
             imgObj = imagesObj["image" + currentSlide],
             image = imgObj.element,
-            wRatio = 1,
-            hRatio = 1,
-            side, w, h, sw, sh, corners, choice, 
-            start, end, coordinates;
+            w = $(that.element).width(),
+            h = $(that.element).height(),
+            elementRatio = w / h;
 
-        if(!imgObj.ratio){
-            imgObj.ratio = image.height / image.width;
-        }
-        if(imgObj.ratio < 1) {  // potrait
-            imgObj.ratio = 1/imgObj.ratio;
-        }
+        var calculateSizes = function(){
+            if(!imgObj.width){
+                imgObj.width = $(image).width();
+            }
+            if(!imgObj.height){
+                imgObj.height = $(image).height();
+            }
+            if(!imgObj.ratio){
+                imgObj.ratio = imgObj.width / imgObj.height;
+                if(imgObj.ratio < 1) {
+                    imgObj.ratio = 1/imgObj.ratio;
+                }
+            }
+            if(elementRatio < 1){
+                elementRatio = 1/elementRatio;
+            }
 
-        w = $(this.element).width();
-        h = $(this.element).height();
+            // set image's width and height to fit container
+            // deal with portrait/landscape formats 
+            // the greater the ratio, the more horizontal the format
+            if(imgObj.ratio >= elementRatio) { // img is wider in format than container
+                imgObj.scaledWidth = Math.ceil(w * (1/scale));
+                imgObj.scaledHeight = Math.ceil(w * imgObj.ratio * (1 / scale));
+            } else {  // img narrower in format than container, so vertical side will fit container first
+                imgObj.scaledHeight = Math.ceil(h * (1/scale));
+                imgObj.scaledWidth = Math.ceil(h * imgObj.ratio * (1 / scale));
+            }
+        };
 
-        // set image's width and height to fit container
-        // deal with portrait/landscape formats 
-        if((w/h) > 1) {
-           hRatio = imgObj.ratio;
-           side = w;
-        } else {
-            side = h;
-            wRatio = imgObj.ratio;
-        }
-        sw = Math.floor(side * wRatio * (1 / scale));
-        sh = Math.floor(side * hRatio * (1 / scale));
+        calculateSizes();
 
-        $(image).width(sw);
-        $(image).height(sh);
+        $(image).width(imgObj.scaledWidth);
+        $(image).height(imgObj.scaledHeight);
+    };
+
+    Plugin.prototype.chooseCorner = function() {
+        var w = $(this.element).width(),
+            h = $(this.element).height(),
+            corners, choice, start, end, coordinates,
+            scale = this.options.scale,
+            imgObj;
+
+        this.setImageDimensions();
+        
+        imgObj = imagesObj["image" + currentSlide];
 
         corners = [
             {x:0,y:0},
@@ -290,13 +315,12 @@
 
         //build the new coordinates from the chosen coordinates
         coordinates = {
-            startX: start.x * (w - sw*scale) ,
-            startY: start.y * (h - sh*scale),
-            endX: end.x * (w - sw),
-            endY: end.y * (h - sh)
+            startX: start.x * (w - imgObj.scaledWidth * scale) ,
+            startY: start.y * (h - imgObj.scaledHeight * scale),
+            endX: end.x * (w - imgObj.scaledWidth),
+            endY: end.y * (h - imgObj.scaledHeight)
         }
 
-      //
       //  console.log(coordinates.startX + " , "+coordinates.startY + " , " +coordinates.endX + " , " +coordinates.endY);
 
         return coordinates;
