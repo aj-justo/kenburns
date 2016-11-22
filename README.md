@@ -1,3 +1,8 @@
+AJweb's fork changes
+==========
+Support form images and containers in any format ratio (landscape/portrait/square). 
+Code formatting changes and separated the logic that calculates scales etc into separate method.
+
 Kenburns
 ========
  Kenburns.js is a lightweight and flexible Jquery gallery plugin that loads a list of images and transitions them using a pan-and-zoom, _[Ken Burns](http://en.wikipedia.org/wiki/Ken_Burns_effect)_ style effect. 
