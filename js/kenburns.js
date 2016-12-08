@@ -22,6 +22,7 @@
  *
 */
 
+
 ;(function ( $, window, document, undefined ) {
 
     /*  Plugin Parameters
@@ -250,35 +251,40 @@
             image = imgObj.element,
             w = $(that.element).width(),
             h = $(that.element).height(),
-            elementRatio = w / h;
+            elementRatio = w / h,
+            imgIsWiderFormat = null;
 
         var calculateSizes = function(){
-            if(!imgObj.width){
-                imgObj.width = $(image).width();
-            }
-            if(!imgObj.height){
-                imgObj.height = $(image).height();
-            }
-            if(!imgObj.ratio){
-                imgObj.ratio = imgObj.width / imgObj.height;
-                if(imgObj.ratio < 1) {
-                    imgObj.ratio = 1/imgObj.ratio;
+            if(!imgObj.scaledWidth || !imgObj.scaledHeight){
+                if(!imgObj.width){
+                    imgObj.width = $(image).width();
+                }
+                if(!imgObj.height){
+                    imgObj.height = $(image).height();
+                }
+                if(!imgObj.ratio){
+                    imgObj.ratio = imgObj.width / imgObj.height;
+                    if(!imgIsWiderFormat) {
+                        imgIsWiderFormat = imgObj.ratio >= elementRatio;
+                    }
+                    if(imgObj.ratio < 1){
+                        imgObj.ratio = 1 / imgObj.ratio; 
+                    }
+                }
+                // set image's width and height to fit container
+                // deal with portrait/landscape formats 
+                // the greater the ratio, the more horizontal the format
+                if(imgIsWiderFormat) { // img is more horizontal in format than container
+                    imgObj.scaledHeight = Math.ceil(h * (1/scale));
+                    imgObj.scaledWidth = Math.ceil(h * imgObj.ratio * (1 / scale));
+                } else {  // img narrower in format than container, so vertical side will fit container first
+                    imgObj.scaledWidth = Math.ceil(w * (1/scale));
+                    imgObj.scaledHeight = Math.ceil(w * imgObj.ratio * (1 / scale));
                 }
             }
-            if(elementRatio < 1){
-                elementRatio = 1/elementRatio;
-            }
+            
 
-            // set image's width and height to fit container
-            // deal with portrait/landscape formats 
-            // the greater the ratio, the more horizontal the format
-            if(imgObj.ratio >= elementRatio) { // img is wider in format than container
-                imgObj.scaledWidth = Math.ceil(w * (1/scale));
-                imgObj.scaledHeight = Math.ceil(w * imgObj.ratio * (1 / scale));
-            } else {  // img narrower in format than container, so vertical side will fit container first
-                imgObj.scaledHeight = Math.ceil(h * (1/scale));
-                imgObj.scaledWidth = Math.ceil(h * imgObj.ratio * (1 / scale));
-            }
+            
         };
 
         calculateSizes();
