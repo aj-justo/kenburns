@@ -256,8 +256,13 @@
 
 
         var calculateSizes = function(){
-            imgObj.width = $(image).width();
-            imgObj.height = $(image).height();
+            // to retain the original dimensions of the image
+            if(!imgObj.width){
+                imgObj.width = $(image).width();
+            }
+            if(!imgObj.height){
+                imgObj.height = $(image).height();
+            }
             imgObj.ratio = imgObj.width / imgObj.height;
             portraitImg = imgObj.ratio < 1 ? true : false;
             
