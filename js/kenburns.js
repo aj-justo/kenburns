@@ -252,45 +252,30 @@
             w = $(that.element).width(),
             h = $(that.element).height(),
             elementRatio = w / h,
-            imgIsWiderFormat = null;
+            portraitImg;
+
 
         var calculateSizes = function(){
-            if(!imgObj.scaledWidth || !imgObj.scaledHeight){
-                if(!imgObj.width){
-                    imgObj.width = $(image).width();
-                }
-                if(!imgObj.height){
-                    imgObj.height = $(image).height();
-                }
-                if(!imgObj.ratio){
-                    imgObj.ratio = imgObj.width / imgObj.height;
-                    if(!imgIsWiderFormat) {
-                        imgIsWiderFormat = imgObj.ratio >= elementRatio;
-                    }
-                    if(imgObj.ratio < 1){
-                        imgObj.ratio = 1 / imgObj.ratio; 
-                    }
-                }
-                // set image's width and height to fit container
-                // deal with portrait/landscape formats 
-                // the greater the ratio, the more horizontal the format
-                if(imgIsWiderFormat) { // img is more horizontal in format than container
-                    imgObj.scaledHeight = Math.ceil(h * (1/scale));
-                    imgObj.scaledWidth = Math.ceil(h * imgObj.ratio * (1 / scale));
-                } else {  // img narrower in format than container, so vertical side will fit container first
-                    imgObj.scaledWidth = Math.ceil(w * (1/scale));
-                    imgObj.scaledHeight = Math.ceil(w * imgObj.ratio * (1 / scale));
-                }
-            }
+            imgObj.width = $(image).width();
+            imgObj.height = $(image).height();
+            imgObj.ratio = imgObj.width / imgObj.height;
+            portraitImg = imgObj.ratio < 1 ? true : false;
             
-
-            
+            // shortest side of img has to match largest side of element
+            if(portraitImg) { // height larger
+                imgObj.scaledWidth = (w > h ? w : h) * (1 / scale);
+                imgObj.scaledHeight = imgObj.height * (imgObj.scaledWidth / imgObj.width) * (1 / scale);
+            } else {
+                imgObj.scaledHeight = (w > h ? w : h) * (1 / scale); 
+                imgObj.scaledWidth = imgObj.width * (imgObj.scaledHeight / imgObj.height) * (1 / scale);
+            }        
         };
 
         calculateSizes();
 
         $(image).width(imgObj.scaledWidth);
         $(image).height(imgObj.scaledHeight);
+
     };
 
     Plugin.prototype.chooseCorner = function() {
@@ -323,11 +308,9 @@
         coordinates = {
             startX: start.x * (w - imgObj.scaledWidth * scale) ,
             startY: start.y * (h - imgObj.scaledHeight * scale),
-            endX: end.x * (w - imgObj.scaledWidth),
+            endX: end.x * (w - imgObj.scaledWidth), 
             endY: end.y * (h - imgObj.scaledHeight)
         }
-
-      //  console.log(coordinates.startX + " , "+coordinates.startY + " , " +coordinates.endX + " , " +coordinates.endY);
 
         return coordinates;
     }
@@ -367,10 +350,10 @@
         $(image).css({'-webkit-transform':'scale(1) translate3d('+position.endX+'px,'+position.endY+'px,0)'});
         $(image).css({'-moz-transform':'scale(1) translate3d('+position.endX+'px,'+position.endY+'px,0)'});
 
+
         this.transitionOut();
         this.options.onSlideComplete();
     }
-
 
 
     /**
